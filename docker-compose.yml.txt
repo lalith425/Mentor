@@ -1,0 +1,98 @@
+version: '3'
+services:
+  mentor-on-demand-mysql:
+    image: mysql:8.0.18
+    ports:
+      - "33061:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - c:/ mentor-on-demanddb:/var/lib/mysql
+      - ./dbscripts:/docker-entrypoint-initdb.d
+
+  authentication-service:
+    image: authentication-app
+    build: authentication-service/.
+    ports:
+      - 8091:9091
+    depends_on:
+      -   mentor-on-demand-mysql
+    links:
+      -   mentor-on-demand-mysql
+
+  search-service:
+    image: search-app
+    build: search-service/.
+    ports:
+      - 8091:9093
+    depends_on:
+      -  mentor-on-demand-mysql
+    links:
+      -  mentor-on-demand-mysql
+
+  user-service:
+    image: user-app
+    build: user-service/.
+    ports:
+      - 8091:9094
+    depends_on:
+      -  mentor-on-demand-mysql
+    links:
+      -  mentor-on-demand-mysql
+
+  technology-service:
+    image: technology-app
+    build: technology-service/.
+    ports:
+      - 8091:9092
+    depends_on:
+      -  mentor-on-demand-mysql
+    links:
+      -  mentor-on-demand-mysql
+  eureka-service:
+    image: eureka-app
+    build: eureka-service/.
+    ports:
+      - 8091:9096
+    depends_on:
+      -  mentor-on-demand-mysql
+    links:
+      -  mentor-on-demand-mysql
+
+eureka-service:
+    image: eureka-app
+    build: progress-service/.
+    ports:
+      - 8091:9095
+    depends_on:
+      -  mentor-on-demand-mysql
+    links:
+      -  mentor-on-demand-mysql
+
+   zuul-gateway:
+    image: zuul-gateway-app
+    build: zuul-gateway/.
+    ports:
+      - 8091:9097
+    depends_on:
+      -  mentor-on-demand-mysql
+      -  eureka-service
+      -  search-service
+      -  authentication-service
+      -  user-service
+      -  technology-service
+    links:
+      -  mentor-on-demand-mysql
+      -  eureka-service
+      -  search-service
+      -  authentication-service
+      -  user-service
+      -  technology-service
+    angular-service:
+     image: angular-app;
+     build: dist/.
+     ports:
+      - 4200:80
+     links:
+      - zuul-gateway
+   
